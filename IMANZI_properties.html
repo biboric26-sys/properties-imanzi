@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMANZI Stays — Kigali</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1c1410; font-family: 'Segoe UI', Arial, sans-serif; color: #b08060; }
+
+  .site { padding: 1.5rem 1rem; max-width: 1100px; margin: 0 auto; }
+
+  .hero { text-align: center; margin-bottom: 2rem; }
+  .hero h1 { font-size: 26px; font-weight: 500; color: #d4956a; letter-spacing: 3px; text-transform: uppercase; }
+  .hero p { font-size: 12px; color: #7a5c45; margin-top: 6px; letter-spacing: 1.5px; }
+
+  .listings { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; }
+
+  @media (max-width: 640px) {
+    .listings { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 20px; }
+    .main-img { height: 230px; }
+  }
+
+  .card { background: #261c14; border: 0.5px solid #3d2d1e; border-radius: 12px; overflow: hidden; }
+
+  .main-img-wrap { position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .main-img { width: 100%; height: 210px; object-fit: cover; display: block; transition: opacity .2s; }
+  .main-img:active { opacity: .85; }
+  @media (hover: hover) { .main-img:hover { opacity: .85; } }
+
+  .img-label { position: absolute; bottom: 10px; left: 10px; background: rgba(28,20,16,.78); color: #d4956a; font-size: 12px; padding: 4px 10px; border-radius: 20px; letter-spacing: .5px; }
+  .click-hint { position: absolute; bottom: 10px; right: 10px; background: rgba(212,149,106,.12); color: #d4956a; font-size: 10px; padding: 3px 8px; border-radius: 20px; border: 0.5px solid #d4956a; }
+
+  .gallery-overlay { display: none; position: absolute; inset: 0; background: rgba(18,10,6,.96); z-index: 10; flex-direction: column; align-items: center; justify-content: center; padding: 12px; }
+  .gallery-overlay.active { display: flex; }
+  .gallery-big { width: 100%; height: 155px; object-fit: cover; border-radius: 8px; }
+  .gallery-thumbs { display: flex; gap: 6px; margin-top: 9px; width: 100%; }
+  .gallery-thumb { flex: 1; height: 48px; object-fit: cover; border-radius: 4px; cursor: pointer; opacity: .5; transition: opacity .2s; border: 1.5px solid transparent; }
+  .gallery-thumb.active, .gallery-thumb:hover { opacity: 1; border-color: #d4956a; }
+  .close-btn { position: absolute; top: 10px; right: 12px; background: none; border: none; color: #d4956a; font-size: 20px; cursor: pointer; z-index: 11; line-height: 1; padding: 4px; }
+
+  .thumb-strip { display: flex; gap: 5px; padding: 7px 7px 0; }
+  .thumb { flex: 1; height: 54px; object-fit: cover; border-radius: 4px; cursor: pointer; opacity: .6; transition: opacity .2s; }
+  .thumb:hover { opacity: 1; }
+
+  .room-prices { display: flex; gap: 5px; padding: 7px 9px 0; flex-wrap: wrap; }
+  .rpill { font-size: 11px; background: #2e1e11; color: #c47a45; border: 0.5px solid #4a2e18; border-radius: 20px; padding: 3px 9px; }
+
+  .card-body { padding: 12px 12px 4px; }
+  .loc { font-size: 12px; color: #7a5c45; display: flex; align-items: center; gap: 5px; margin-bottom: 10px; }
+  .loc svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .amenities { display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #8a6a50; border: 0.5px solid #3d2d1e; border-radius: 20px; padding: 4px 10px; background: #1e140e; }
+  .badge svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+  .card-footer { border-top: 0.5px solid #3d2d1e; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .from-label { font-size: 11px; color: #5a3f2a; }
+  .from-price { font-size: 17px; font-weight: 500; color: #d4956a; }
+
+  .car-strip { margin-top: 1.5rem; background: #261c14; border: 0.5px solid #3d2d1e; border-radius: 12px; padding: 15px 20px; display: flex; align-items: center; justify-content: center; gap: 16px; }
+  <div id="map" style="width:100%; height:320px; border-radius:12px; margin-top:1.5rem; border:0.5px solid #3d2d1e;"></div>
+  .car-text p { font-size: 11px; color: #7a5c45; letter-spacing: .5px; text-transform: uppercase; }
+  .car-text strong { font-size: 18px; font-weight: 500; color: #d4956a; }
+
+  .site-footer { text-align: center; margin-top: 1.5rem; font-size: 11px; color: #4a3020; letter-spacing: 1px; padding-bottom: 1rem; }
+</style>
+</head>
+<body>
+<div class="site">
+
+  <div class="hero">
+    <h1>Premium Stays</h1>
+    <p>Kigali &mdash; Rwanda</p>
+  </div>
+
+  <div class="listings">
+
+    <!-- ===== CARD 1: KACYIRU ===== -->
+    <div class="card">
+      <div class="main-img-wrap" onclick="openGallery(this)">
+        <!-- REPLACE with your Kacyiru main photo URL -->
+        <img class="main-img" src="./PHOTOS/KACYIRU/1.jpeg" alt="Kacyiru property">
+        <span class="img-label">Kacyiru</span>
+        <span class="click-hint">View photos</span>
+        <div class="gallery-overlay">
+          <button class="close-btn" onclick="event.stopPropagation();closeGallery(this)">&#x2715;</button>
+          <!-- REPLACE the 4 src values below with your Kacyiru gallery photos -->
+          <img class="gallery-big" src="./PHOTOS/KACYIRU/kax 2.jpeg" alt="">
+          <div class="gallery-thumbs">
+            <img class="gallery-thumb active" src="./PHOTOS/KACYIRU/ROOM 2.jpeg" onclick="event.stopPropagation();switchImg("./PHOTOS/KACYIRU/ROOM 2.jpeg")" alt="">
+            <img class="gallery-thumb" src="./PHOTOS/KACYIRU/ROOM3.jpeg" onclick="event.stopPropagation();switchImg("./PHOTOS/KACYIRU/ROOM3.jpeg")" alt="">
+            <img class="gallery-thumb" src="./PHOTOS/KACYIRU/BATH 2.jpeg" onclick="event.stopPropagation();switchImg( "./PHOTOS/KACYIRU/BATH 2.jpeg")" alt="">
+
+          </div>
+        </div>
+      </div>
+      <!-- REPLACE the 3 thumb src values with your Kagugu room photos -->
+      <div class="thumb-strip">
+        <img class="thumb" src="./PHOTOS/KACYIRU/ROOM1.jpeg" alt="Room 1">
+        <img class="thumb" src="./PHOTOS/KACYIRU/ROOM 2.jpeg" alt="Room 2">
+        <img class="thumb" src="./PHOTOS/KACYIRU/ROOM3.jpeg" alt="Room 3">
+      </div>
+      
+      <div class="room-prices">
+        <span class="rpill">Studio &mdash; $17/night</span>
+        <span class="rpill">1 Bedroom &mdash; $17/night</span>
+        <span class="rpill">Master Bedroom &mdash; $25/night unavailable at the moment</span>
+      </div>
+      <div class="card-body">
+        <div class="loc">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7a5c45" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          
+ 
+          Kacyiru, Kigali, Rwanda 
+        </div>
+        <div class="amenities">
+          <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>Wi-Fi available</span>
+          <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Breakfast $3</span>
+        </div>
+      </div>
+      <div class="card-footer"><span class="from-label">from</span><span class="from-price">$30/ night</span>
+      <a href="https://www.google.com/maps?q=-1.932477079028176,30.072717349532056 " target="_blank" style="font-size:12px; color:#d4956a; border:0.5px solid #d4956a; border-radius:20px; padding:4px 12px; text-decoration:none;">
+  Get directions</a>
+      </div>
+      
+
+    </div>
+
+    <!-- ===== CARD 2: KAGUGU ===== -->
+    <div class="card">
+      <div class="main-img-wrap" onclick="openGallery(this)">
+        <!-- REPLACE with your Kagugu main photo URL -->
+        <img class="main-img" src="./PHOTOS/KAGUGU/DINING.jpeg" alt="Kagugu property">
+        <span class="img-label">Kagugu</span>
+        <span class="click-hint">View photos</span>
+        <div class="gallery-overlay">
+          <button class="close-btn" onclick="event.stopPropagation();closeGallery(this)">&#x2715;</button>
+          <!-- REPLACE the 4 src values below with your Kagugu gallery photos -->
+          <img class="gallery-big" src="./PHOTOS/KAGUGU/DINING.jpeg" alt="">
+          <div class="gallery-thumbs">
+            <img class="gallery-thumb active" src="./PHOTOS/KAGUGU/LIVING.jpeg" onclick="event.stopPropagation();switchImg(this,'https://')" alt="">
+            <img class="gallery-thumb" src="./PHOTOS/KAGUGU/MAIN.jpeg" onclick="event.stopPropagation();switchImg(this,'https://images.unsplash.com/photo-1502005097973-6a7082348e28?w=800&q=80')" alt="">
+            <img class="gallery-thumb" src="./PHOTOS/KAGUGU/ROOM1.jpeg" onclick="event.stopPropagation();switchImg(this,'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80')" alt="">
+            <img class="gallery-thumb" src="." onclick="event.stopPropagation();switchImg(this,'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80')" alt="">
+          </div>
+        </div>
+      </div>
+      <!-- REPLACE the 3 thumb src values with your Kagugu room photos -->
+      <div class="thumb-strip">
+        <img class="thumb" src="./PHOTOS/KAGUGU/MAIN.jpeg" alt="Room 1">
+        <img class="thumb" src="./PHOTOS/KAGUGU/ROOM1.jpeg" alt="Room 2">
+        <img class="thumb" src="./PHOTOS/KAGUGU/2.jpeg" alt="Room 3">
+      </div>
+      <div class="room-prices">
+        <span class="rpill">Garden Room &mdash; $17/night</span>
+        <span class="rpill">Deluxe &mdash; $17/night</span>
+        <span class="rpill">Master Suite  not available at the moment &mdash; $25/night</span> 
+      </div>
+      <div class="card-body">
+        <div class="loc">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7a5c45" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Kagugu, Kigali, Rwanda
+        </div>
+        <div class="amenities">
+          <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>Wi-Fi available</span>
+          <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Breakfast $3</span>
+        </div>
+      </div>
+      <div class="card-footer"><span class="from-label">from</span><span class="from-price">$30 / night</span>
+      <a href="https://www.google.com/maps?q=-1.9073691295811406,30.085091424695023 " target="_blank" style="font-size:12px; color:#d4956a; border:0.5px solid #d4956a; border-radius:20px; padding:4px 12px; text-decoration:none;">
+  Get directions</a>
+      </div>
+      
+    </div>
+
+    <!-- ===== CARD 3: GISOZI ===== -->
+    <div class="card">
+      <div class="main-img-wrap" onclick="openGallery(this)">
+        <!-- REPLACE with your Gisozi main photo URL -->
+        <img class="main-img" src="./PHOTOS/GISOZI/outside.jpeg" alt="Gisozi property">
+        <span class="img-label">Gisozi</span>
+        <span class="click-hint">View photos</span>
+        <div class="gallery-overlay">
+          <button class="close-btn" onclick="event.stopPropagation();closeGallery(this)">&#x2715;</button>
+          <!-- REPLACE the 4 src values below with your Gisozi gallery photos -->
+          <img class="gallery-big" src="./PHOTOS/GISOZI/LIVING.jpeg" alt="">
+          <div class="gallery-thumbs">
+            <img class="gallery-thumb active" src="./PHOTOS/GISOZI/INSIDE.jpeg" onclick="event.stopPropagation();switchImg(this,'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80')" alt="">
+            <img class="gallery-thumb" src="./PHOTOS/GISOZI/KItchen.jpeg" onclick="event.stopPropagation();switchImg(this,'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?w=800&q=80')" alt="">
+            <img class="gallery-thumb" src="./PHOTOS/GISOZI/LIVING.jpeg" onclick="event.stopPropagation();switchImg(this,'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80')" alt="">
+            <img class="gallery-thumb" src="./PHOTOS/GISOZI/bathroom.jpeg" onclick="event.stopPropagation();switchImg(this,'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=800&q=80')" alt="">
+          </div>
+        </div>
+      </div>
+      <!-- REPLACE the 3 thumb src values with your Gisozi room photos -->
+      <div class="thumb-strip">
+        <img class="thumb" src="./PHOTOS/GISOZI/ROOM1.jpeg" alt="Room 1">
+        <img class="thumb" src="./PHOTOS/GISOZI/ROOM2.jpeg" alt="Room 2">
+        <img class="thumb" src="./PHOTOS/GISOZI/LIVING.jpeg" alt="Room 3">
+      </div>
+      <div class="room-prices">
+        <span class="rpill">Cozy Room &mdash; $30/night</span>
+        <span class="rpill">Standard &mdash; $30/night</span>
+        <span class="rpill">Suite &mdash; $30/night</span>
+      </div>
+      <div class="card-body">
+        <div class="loc">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7a5c45" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Gisozi, Kigali, Rwanda
+        </div>
+        <div class="amenities">
+          <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>Wi-Fi available</span>
+          <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Breakfast $3</span>
+        </div>
+      </div>
+      <div class="card-footer"><span class="from-label">from</span><span class="from-price">$35/ night</span>
+      <a href="https://www.google.com/maps?q=-1.9081360005976433,30.060564707084446 " target="_blank" style="font-size:12px; color:#d4956a; border:0.5px solid #d4956a; border-radius:20px; padding:4px 12px; text-decoration:none;">
+  Get directions</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="car-strip">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#d4956a" stroke-width="1.5" style="width:34px;height:34px">
+      <rect x="1" y="3" width="15" height="13" rx="2"/>
+      <path d="M16 8h4l3 5v3h-7V8z"/>
+      <circle cx="5.5" cy="18.5" r="2.5"/>
+      <circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+    <div class="car-text">
+      <p>Car with fuel + driver</p>
+      <strong>$60 flat rate</strong>
+    </div>
+  </div>
+
+  <div class="site-footer">&copy; 2026 Premium Stays Kigali</div>
+
+</div>
+
+<script>
+  function openGallery(wrap) { wrap.querySelector('.gallery-overlay').classList.add('active'); }
+  function closeGallery(btn) { btn.closest('.gallery-overlay').classList.remove('active'); }
+  function switchImg(thumb, src) {
+    var o = thumb.closest('.gallery-overlay');
+    o.querySelector('.gallery-big').src = src;
+    o.querySelectorAll('.gallery-thumb').forEach(function(t){ t.classList.remove('active'); });
+    thumb.classList.add('active');
+  }
+</script>
+
+</body>
+</html>
